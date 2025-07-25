@@ -122,7 +122,33 @@ def main():
     data_type = st.sidebar.selectbox("Select Asset Type:", ["Stocks", "Cryptocurrency"])
 
     if data_type == "Stocks":
-        tickers = [t.strip() for t in st.sidebar.text_area("Enter stock tickers (comma-separated):", value="AAPL, MSFT").upper().split(',') if t.strip()]
+        tickers = []
+        sheet_id = "1DGty_CrUj1zBBZaVSpz6NwPr-7B2eE0wYo6oYqcwXOE"
+        sheet_name = "CodeName"
+        url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
+        df = pd.read_csv(url, dtype=str).fillna("")
+        # Sidebar: search input
+        search_query = st.sidebar.text_input("Type to search 'Code'")
+
+        if "codes" not in st.session_state:
+            st.session_state.codes = []
+
+        # Filter results
+        if search_query:
+            results = df[df["Code"].str.contains(search_query, case=False, na=False)]
+            options = results["Code"].tolist()
+
+            # Show filtered results as a simulated dropdown
+            selected = st.sidebar.selectbox("Matching codes:", options)
+            if st.sidebar.button("Add Code"):
+                if selected and selected.upper() not in st.session_state.codes:
+                    st.session_state.codes.append(selected.upper())
+        if st.session_state.codes:
+            st.sidebar.write("### ADDED CODES")
+            for code in st.session_state.codes:
+                st.sidebar.write(f"-{code}")
+        else:
+            st.sidebar.info("Start typing to search...")
         start_date = st.sidebar.date_input("Start date", value=datetime.now() - timedelta(days=365))
         end_date = st.sidebar.date_input("End date", value=datetime.now())
     else:
@@ -140,7 +166,7 @@ def main():
         ticker_data = {}
 
         if data_type == "Stocks":
-            for ticker in tickers:
+            for ticker in st.session_state.codes:
                 logging.info(f"Analyzing stock: {ticker} from {start_date} to {end_date}")
                 data = load_stock_data(ticker, start_date, end_date)
                 if not data.empty:
