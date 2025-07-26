@@ -122,33 +122,23 @@ def main():
     data_type = st.sidebar.selectbox("Select Asset Type:", ["Stocks", "Cryptocurrency"])
 
     if data_type == "Stocks":
-        tickers = []
         sheet_id = "1DGty_CrUj1zBBZaVSpz6NwPr-7B2eE0wYo6oYqcwXOE"
         sheet_name = "CodeName"
         url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
         df = pd.read_csv(url, dtype=str).fillna("")
-        # Sidebar: search input
-        search_query = st.sidebar.text_input("Type to search 'Code'")
 
         if "codes" not in st.session_state:
             st.session_state.codes = []
 
-        # Filter results
-        if search_query:
-            results = df[df["Code"].str.contains(search_query, case=False, na=False)]
-            options = results["Code"].tolist()
+        options = df["Code"].dropna().unique().tolist()
 
-            # Show filtered results as a simulated dropdown
-            selected = st.sidebar.selectbox("Matching codes:", options)
-            if st.sidebar.button("Add Code"):
-                if selected and selected.upper() not in st.session_state.codes:
-                    st.session_state.codes.append(selected.upper())
-        if st.session_state.codes:
-            st.sidebar.write("### ADDED CODES")
-            for code in st.session_state.codes:
-                st.sidebar.write(f"-{code}")
-        else:
-            st.sidebar.info("Start typing to search...")
+        # Show filtered results as a dropdown
+        selected = st.sidebar.multiselect("Matching codes:", options, default=st.session_state.codes)
+        st.session_state.codes = [code.upper() for code in selected]
+
+        st.sidebar.write("### Added Codes: ")
+        for code in st.session_state.codes:
+            st.sidebar.write(code)
         start_date = st.sidebar.date_input("Start date", value=datetime.now() - timedelta(days=365))
         end_date = st.sidebar.date_input("End date", value=datetime.now())
     else:
